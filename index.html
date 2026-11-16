@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Архитектура ИИ-моделей — интерактивный гайд</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700&family=Unbounded:wght@300;400;500&display=swap&subset=cyrillic" rel="stylesheet">
+<style>
+:root{
+  --bg:#05030A;--glass:rgba(20,18,28,.4);--line:rgba(255,255,255,.1);
+  --txt:#EFEDF5;--dim:rgba(214,210,228,.7);
+  --spring:cubic-bezier(.34,1.56,.64,1);
+  color-scheme:dark;box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;min-height:100svh;background:var(--bg);color:var(--txt);overflow-x:hidden;
+  font:400 16px/1.65 Manrope,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+
+/* ---------- Atmosphere: calm, mostly black and grey ---------- */
+.bg{position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:0}
+.orbs{position:absolute;inset:0}
+.orb{position:absolute;aspect-ratio:1;filter:blur(140px);will-change:transform,border-radius}
+.o1{width:clamp(280px,46vw,600px);background:#4C3F7A;top:-14%;left:-10%;opacity:.5;animation:d1 36s ease-in-out infinite alternate,m 20s ease-in-out infinite alternate}
+.o2{width:clamp(260px,42vw,540px);background:#3A4378;top:10%;right:-12%;opacity:.42;animation:d2 40s ease-in-out infinite alternate,m 24s ease-in-out infinite alternate-reverse}
+.o3{width:clamp(240px,38vw,480px);background:#6B4678;bottom:-18%;left:20%;opacity:.3;animation:d3 44s ease-in-out infinite alternate,m 22s ease-in-out infinite alternate}
+.o4{width:clamp(200px,30vw,380px);background:#4A4A58;top:44%;left:50%;opacity:.4;animation:d4 32s ease-in-out infinite alternate,m 26s ease-in-out infinite alternate-reverse}
+@keyframes d1{to{transform:translate3d(20vw,14vh,0) scale(1.2)}}
+@keyframes d2{to{transform:translate3d(-18vw,20vh,0) scale(.88)}}
+@keyframes d3{to{transform:translate3d(22vw,-16vh,0) scale(1.15)}}
+@keyframes d4{to{transform:translate3d(-26vw,-10vh,0) scale(1.3)}}
+@keyframes m{0%{border-radius:50%}50%{border-radius:62% 38% 55% 45%/45% 60% 40% 55%}100%{border-radius:40% 60% 42% 58%/58% 42% 60% 40%}}
+/* Liquid glass in the background: glass shards + a droplet that follows the pointer */
+.gb{position:absolute;will-change:transform,border-radius;
+  background:linear-gradient(135deg,rgba(255,255,255,.08),rgba(255,255,255,.012) 55%,rgba(170,160,230,.05));
+  -webkit-backdrop-filter:blur(8px) saturate(170%) brightness(1.12);backdrop-filter:blur(8px) saturate(170%) brightness(1.12);
+  border:1px solid rgba(255,255,255,.1);
+  box-shadow:inset 0 1px 1px rgba(255,255,255,.3),inset 0 0 50px rgba(255,255,255,.035),inset 0 -24px 50px -26px rgba(160,150,225,.18),0 30px 80px -40px rgba(0,0,0,.8)}
+.g1{width:clamp(220px,34vw,460px);height:clamp(260px,40vw,540px);left:6%;top:14%;animation:gm 22s ease-in-out infinite alternate,g1 38s ease-in-out infinite alternate}
+.g2{width:clamp(200px,30vw,400px);height:clamp(200px,30vw,400px);right:4%;top:46%;animation:gm 26s ease-in-out infinite alternate-reverse,g2 44s ease-in-out infinite alternate}
+.g3{width:clamp(240px,36vw,480px);height:clamp(180px,26vw,340px);left:32%;bottom:-6%;animation:gm 30s ease-in-out infinite alternate,g3 40s ease-in-out infinite alternate}
+@keyframes gm{0%{border-radius:58% 42% 46% 54%/50% 58% 42% 50%}50%{border-radius:42% 58% 60% 40%/58% 42% 58% 42%}100%{border-radius:52% 48% 38% 62%/42% 56% 44% 58%}}
+@keyframes g1{to{transform:translate3d(4vw,6vh,0) rotate(8deg)}}
+@keyframes g2{to{transform:translate3d(-5vw,-7vh,0) rotate(-10deg)}}
+@keyframes g3{to{transform:translate3d(6vw,-4vh,0) rotate(6deg)}}
+.drop{position:absolute;left:0;top:0;width:150px;height:150px;opacity:0;will-change:transform;border-radius:50%;animation:dm 7s ease-in-out infinite alternate;
+  background:radial-gradient(circle at 32% 26%,rgba(255,255,255,.22),rgba(255,255,255,.04) 38%,rgba(170,160,230,.06) 70%);
+  -webkit-backdrop-filter:blur(3px) saturate(190%) brightness(1.2);backdrop-filter:blur(3px) saturate(190%) brightness(1.2);
+  border:1px solid rgba(255,255,255,.16);
+  box-shadow:inset 0 2px 2px rgba(255,255,255,.4),inset 0 0 36px rgba(255,255,255,.06),inset 0 -14px 30px -10px rgba(170,160,235,.3),0 0 60px -10px rgba(150,140,220,.35)}
+@keyframes dm{0%{border-radius:50% 50% 48% 52%}100%{border-radius:56% 44% 52% 48%/46% 54% 46% 54%}}
+.lines.hot{opacity:0;background-image:linear-gradient(rgba(220,210,255,.17) 1px,transparent 1px),linear-gradient(90deg,rgba(220,210,255,.17) 1px,transparent 1px);
+  -webkit-mask-image:radial-gradient(circle 230px at var(--cx,50%) var(--cy,50%),#000,transparent);mask-image:radial-gradient(circle 230px at var(--cx,50%) var(--cy,50%),#000,transparent)}
+.vig{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 35%,transparent 0,rgba(5,3,10,.66) 48%,#030207 100%)}
+.lines{position:absolute;inset:0;
+  background-image:linear-gradient(rgba(255,255,255,.028) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.028) 1px,transparent 1px);
+  background-size:56px 56px;
+  -webkit-mask-image:radial-gradient(ellipse at 50% 40%,#000 15%,transparent 72%);mask-image:radial-gradient(ellipse at 50% 40%,#000 15%,transparent 72%)}
+.noise{position:absolute;inset:0;opacity:.1;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .6 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")}
+
+/* ---------- Liquid glass: clear, soft, jelly-like ---------- */
+.glass{position:relative;background:var(--glass);
+  -webkit-backdrop-filter:blur(16px) saturate(140%);backdrop-filter:blur(16px) saturate(140%);
+  border:1px solid var(--line);
+  box-shadow:inset 0 1px 1px rgba(255,255,255,.28),inset 0 0 26px rgba(255,255,255,.035),inset 0 -10px 24px -12px rgba(150,140,200,.12),0 22px 50px -24px rgba(0,0,0,.9);
+  transform:perspective(1000px);will-change:transform}
+.glass::before{content:"";position:absolute;inset:-1px;border-radius:inherit;padding:1px;pointer-events:none;
+  background:linear-gradient(140deg,rgba(255,255,255,.4),rgba(255,255,255,.03) 40%,rgba(180,170,225,.2));
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;
+  mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0)}
+.glass::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .7s ease;
+  background:
+    radial-gradient(circle at var(--mx,50%) var(--my,50%),rgba(255,255,255,.14),transparent 16%),
+    radial-gradient(circle at var(--mx,50%) var(--my,50%),rgba(170,160,215,.26),rgba(120,110,170,.1) 40%,transparent 72%)}
+.glass.on::after{opacity:1}
+.rw{position:absolute;inset:0;border-radius:inherit;overflow:hidden;pointer-events:none}
+.rip{position:absolute;width:20px;height:20px;margin:-10px;border-radius:50%;
+  background:radial-gradient(circle,rgba(255,255,255,.3),rgba(190,180,235,.12) 50%,transparent 70%);animation:rip 1.1s cubic-bezier(.2,.7,.2,1) forwards}
+@keyframes rip{to{transform:scale(20);opacity:0}}
+
+/* ---------- Layout ---------- */
+.wrap{position:relative;z-index:1;max-width:1040px;margin:0 auto;min-height:100svh;
+  padding:clamp(24px,7vh,72px) clamp(14px,4vw,32px) 56px;
+  display:flex;flex-direction:column;justify-content:flex-start;gap:clamp(22px,4vw,34px)}
+.hero{border-radius:40px;padding:clamp(28px,5vw,52px) clamp(20px,5vw,56px);text-align:center}
+h1{margin:0;font-family:Unbounded,Manrope,system-ui,sans-serif;font-size:clamp(1.4rem,4.2vw,2.6rem);line-height:1.2;letter-spacing:-.02em;
+  background:linear-gradient(105deg,#fff 10%,#D8D3EA 60%,#B6AED2 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+h1 .a{display:block;font-weight:500}
+h1 .b{display:block;font-weight:300;margin-top:.35em;font-size:.82em}
+h1 .n{white-space:nowrap}
+.lead{margin:clamp(14px,3vw,24px) auto 0;max-width:58ch;color:var(--dim);font-size:clamp(.95rem,2.2vw,1.08rem);font-weight:300}
+
+/* Row of four triggers */
+.row{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+@media(min-width:860px){.row{grid-template-columns:repeat(4,1fr);gap:14px}}
+.trig{position:relative;z-index:2;width:100%;min-height:112px;display:flex;flex-direction:column;justify-content:space-between;gap:16px;
+  padding:16px 18px 18px;border-radius:30px;color:inherit;font:600 .98rem/1.3 Manrope,system-ui,sans-serif;text-align:left;cursor:pointer;
+  -webkit-tap-highlight-color:transparent;transition:scale .45s var(--spring),box-shadow .6s ease,border-radius .8s var(--spring)}
+@media(hover:hover){.trig:hover{border-radius:36px 24px 34px 26px}}
+.trig:active{scale:.96}
+.trig:focus-visible{outline:2px solid #C9C2E4;outline-offset:3px}
+.top{display:flex;align-items:center;justify-content:space-between;width:100%}
+.num{display:grid;place-items:center;width:36px;height:36px;border-radius:14px;font-weight:700;font-size:.92rem;
+  background:linear-gradient(135deg,color-mix(in srgb,var(--acc) 70%,#222),rgba(255,255,255,.06));box-shadow:inset 0 1px 1px rgba(255,255,255,.35)}
+.chev{width:9px;height:9px;margin:-3px 4px 0 0;border-right:2px solid var(--dim);border-bottom:2px solid var(--dim);rotate:45deg;transition:rotate .7s var(--spring),margin .7s var(--spring)}
+.trig.active{box-shadow:inset 0 1px 1px rgba(255,255,255,.3),inset 0 0 26px rgba(255,255,255,.05),0 0 44px -14px var(--acc),0 22px 50px -24px rgba(0,0,0,.9)}
+.trig.active .chev{rotate:225deg;margin-top:5px}
+
+/* One wide drawer: the card grows out from under the pressed button */
+.drawer{height:0;overflow:hidden;visibility:hidden;position:relative;z-index:1;
+  transition:height .55s cubic-bezier(.65,0,.35,1),visibility 0s .55s}
+.drawer.has{visibility:visible;transition:height .9s var(--spring),visibility 0s}
+.dinner{display:grid;padding:14px 2px 6px}
+.cw{grid-area:1/1;align-self:start;transform-origin:var(--ox,50%) 0;visibility:hidden;translate:0 -36px;scale:.5;
+  transition:translate .55s cubic-bezier(.65,0,.35,1),scale .55s cubic-bezier(.65,0,.35,1),visibility 0s .55s}
+.cw.show{visibility:visible;translate:0 0;scale:1;transition:translate .95s var(--spring),scale .95s var(--spring),visibility 0s}
+.card{border-radius:36px;padding:clamp(22px,4vw,34px);display:grid;gap:20px 40px;opacity:0;transition:opacity .35s ease}
+.cw.show .card{opacity:1;transition:opacity .6s ease .08s}
+@media(min-width:760px){.card{grid-template-columns:1.15fr 1fr}}
+.tag{display:inline-flex;align-items:center;gap:9px;padding:5px 13px 5px 11px;border-radius:99px;font-size:.78rem;font-weight:600;
+  background:color-mix(in srgb,var(--acc) 16%,transparent);border:1px solid color-mix(in srgb,var(--acc) 40%,transparent)}
+.tag b{width:7px;height:7px;border-radius:50%;background:var(--acc);box-shadow:0 0 10px 1px var(--acc)}
+.card h3{margin:14px 0 8px;font:400 1.1rem/1.35 Unbounded,Manrope,sans-serif;letter-spacing:-.01em}
+.card p{margin:0;color:var(--dim);font-size:.94rem}
+.card ul{margin:0;padding:0;list-style:none;display:grid;gap:10px}
+.card li{position:relative;padding-left:22px;font-size:.9rem}
+.card li::before{content:"";position:absolute;left:2px;top:.55em;width:8px;height:8px;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,#fff,var(--acc) 65%);box-shadow:0 0 8px var(--acc)}
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:20px}
+.chips span{padding:5px 12px;border-radius:99px;font-size:.8rem;font-weight:500;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12)}
+/* Epic atmosphere: four heavily blurred colours, aurora, light beams, fluted glass, dust */
+.mesh{position:absolute;inset:0}
+.mesh i{position:absolute;aspect-ratio:1;border-radius:50%;filter:blur(130px);will-change:transform;opacity:.32}
+.m1{width:52vmax;left:-18%;top:-26%;background:#5B4B9A;animation:mv1 48s ease-in-out infinite alternate}
+.m2{width:46vmax;right:-20%;top:-8%;background:#2B6E8E;animation:mv2 56s ease-in-out infinite alternate}
+.m3{width:46vmax;left:-8%;bottom:-32%;background:#9A4F7C;animation:mv3 52s ease-in-out infinite alternate}
+.m4{width:40vmax;right:-14%;bottom:-26%;background:#B07C4F;opacity:.26;animation:mv4 60s ease-in-out infinite alternate}
+.aurora{position:absolute;left:50%;top:50%;width:120vmax;height:120vmax;translate:-50% -50%;border-radius:50%;opacity:.32;filter:blur(90px);
+  background:conic-gradient(transparent,rgba(91,75,154,.55),transparent 30%,rgba(43,110,142,.45) 50%,transparent 66%,rgba(154,79,124,.45) 86%,transparent);animation:spin 100s linear infinite}
+.beam{position:absolute;top:-20%;width:16vw;height:140%;rotate:20deg;filter:blur(34px);opacity:.7;background:linear-gradient(180deg,transparent,rgba(214,204,255,.1) 40%,transparent);animation:sway 16s ease-in-out infinite alternate}
+.b1{left:14%}.b2{left:64%;rotate:24deg;animation-delay:-8s}
+.flute{position:absolute;inset:0;opacity:.5;background:repeating-linear-gradient(90deg,rgba(255,255,255,.03) 0 1px,transparent 1px 9px);
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 35%,#000 65%,transparent);mask-image:linear-gradient(90deg,transparent,#000 35%,#000 65%,transparent)}
+.dust{position:absolute;inset:0;animation:tw 7s ease-in-out infinite alternate;background-image:radial-gradient(1.2px 1.2px at 12% 22%,rgba(255,255,255,.7),transparent),radial-gradient(1px 1px at 78% 16%,rgba(255,255,255,.6),transparent),radial-gradient(1.4px 1.4px at 44% 64%,rgba(255,255,255,.5),transparent),radial-gradient(1px 1px at 90% 70%,rgba(255,255,255,.6),transparent),radial-gradient(1.2px 1.2px at 28% 88%,rgba(255,255,255,.55),transparent),radial-gradient(1px 1px at 62% 38%,rgba(255,255,255,.5),transparent),radial-gradient(1px 1px at 6% 56%,rgba(255,255,255,.5),transparent)}
+.goo{position:absolute;left:0;top:0;width:100%;height:100%;opacity:.36}
+.gb,.drop{display:none}
+/* Smoke: two drifting layers of soft turbulence plus a breathing fog at the bottom */
+.smoke{position:absolute;left:-50%;top:-50%;width:200%;height:200%;opacity:.3;will-change:transform;animation:sm1 90s linear infinite;
+  background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='900' height='900'><filter id='f' x='0' y='0' width='100%' height='100%' color-interpolation-filters='sRGB'><feTurbulence type='fractalNoise' baseFrequency='.004 .007' numOctaves='4' seed='7' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .72 0 0 0 0 .68 0 0 0 0 .92 0 0 0 2.4 -.9'/></filter><rect width='100%' height='100%' filter='url(%23f)'/></svg>") 0 0/900px 900px}
+.smoke.s2{opacity:.24;filter:hue-rotate(150deg);background-size:1300px 1300px;animation:sm2 120s linear infinite}
+.fog{position:absolute;left:0;right:0;bottom:0;height:48%;background:radial-gradient(ellipse at 50% 100%,rgba(130,118,185,.26),transparent 70%);animation:br 11s ease-in-out infinite alternate}
+@keyframes sm1{to{transform:translate3d(14%,9%,0) rotate(5deg)}}
+@keyframes sm2{to{transform:translate3d(-16%,-8%,0) rotate(-6deg)}}
+@keyframes br{to{opacity:.55}}
+@media(prefers-reduced-motion:reduce){.smoke,.fog{animation:none}}
+@keyframes mv1{to{transform:translate3d(14vw,12vh,0) scale(1.15)}}
+@keyframes mv2{to{transform:translate3d(-12vw,16vh,0) scale(.9)}}
+@keyframes mv3{to{transform:translate3d(16vw,-12vh,0) scale(1.2)}}
+@keyframes mv4{to{transform:translate3d(-14vw,-10vh,0) scale(1.1)}}
+@keyframes spin{to{rotate:360deg}}
+@keyframes sway{to{translate:6vw 0;opacity:.35}}
+@keyframes tw{to{opacity:.4}}
+@media(prefers-reduced-motion:reduce){.mesh i,.aurora,.beam,.dust{animation:none}}
+
+/* Lab, glossary, footer */
+.sec h2{margin:0 0 6px;font:400 clamp(1.1rem,3vw,1.5rem)/1.3 Unbounded,Manrope,sans-serif;letter-spacing:-.01em}
+.sec>p{margin:0 0 18px;color:var(--dim);font-weight:300}
+.two{display:grid;gap:14px}@media(min-width:860px){.two{grid-template-columns:1fr 1fr}}
+.pane{border-radius:32px;padding:clamp(18px,3vw,28px)}
+.pane h3{margin:0 0 4px;font:400 1rem/1.35 Unbounded,Manrope,sans-serif}
+.pane small{display:block;color:var(--dim);font-size:.86rem}
+.pane small b{color:var(--txt);font-weight:600}
+textarea{width:100%;margin:12px 0;min-height:84px;resize:vertical;border-radius:20px;padding:12px 14px;color:var(--txt);font:inherit;background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.1);outline:none}
+textarea:focus-visible{border-color:rgba(200,190,240,.6)}
+.tok{display:flex;flex-wrap:wrap;gap:4px;min-height:40px}
+.tok span{padding:3px 8px;border-radius:9px;font-size:.88rem;white-space:pre-wrap;background:hsla(var(--h),30%,55%,.2);border:1px solid hsla(var(--h),30%,70%,.3)}
+.cnt{margin-top:10px;font-size:.85rem;color:var(--dim)}
+.bar{display:grid;grid-template-columns:84px 1fr 42px;gap:10px;align-items:center;margin:9px 0;font-size:.88rem}
+.bar i{display:block;height:10px;border-radius:99px;background:rgba(255,255,255,.07);overflow:hidden}
+.bar b{display:block;height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,#8F82C4,#C3A2D0);transition:width .8s var(--spring)}
+.bar em{font-style:normal;text-align:right;color:var(--dim)}
+.bar.pick span{color:#fff;font-weight:700}.bar.pick i{box-shadow:0 0 18px rgba(190,170,240,.55)}
+.ctl{display:flex;align-items:center;gap:12px;margin-top:16px;flex-wrap:wrap}
+.ctl label{font-size:.88rem;color:var(--dim)}.ctl label b{color:var(--txt)}
+input[type=range]{flex:1;min-width:120px;accent-color:#A99BD6}
+.btn{padding:10px 20px;border-radius:99px;color:inherit;font:600 .9rem Manrope,system-ui,sans-serif;cursor:pointer;transition:scale .4s var(--spring)}
+.btn:active{scale:.94}.btn:focus-visible,.lnk:focus-visible{outline:2px solid #C9C2E4;outline-offset:3px}
+.gl{border-radius:32px;padding:8px;display:grid;grid-template-columns:repeat(2,1fr)}@media(min-width:860px){.gl{grid-template-columns:repeat(3,1fr)}}
+.term{padding:16px 18px;border-radius:24px;transition:background .5s}.term:hover{background:rgba(255,255,255,.05)}
+.term b{display:block;margin-bottom:4px;font:500 .88rem/1.4 Unbounded,Manrope,sans-serif}
+.term span{color:var(--dim);font-size:.86rem;line-height:1.5}
+footer{text-align:center;color:var(--dim);font-size:.84rem;font-weight:300;padding-top:6px}
+.lnk{display:block;margin:8px auto 0;background:none;border:0;color:var(--txt);font:500 .88rem Manrope,sans-serif;cursor:pointer;text-decoration:underline;text-underline-offset:4px}
+/* History section */
+.trig.wide{min-height:0;flex-direction:row;align-items:center;gap:16px;padding:16px 22px 16px 18px;border-radius:34px}
+.trig.wide .lbl{flex:1}
+.lbl small{display:block;margin-top:2px;font-weight:400;font-size:.84rem;color:var(--dim)}
+.trig.wide .chev{margin:-3px 6px 0 0}
+.trig.wide.active .chev{rotate:225deg;margin-top:5px}
+.card.hist{grid-template-columns:1fr}
+.tl{margin:0;padding:0;list-style:none;display:grid;gap:0 44px}
+@media(min-width:860px){.tl{grid-template-columns:1fr 1fr}}
+.tl li{display:grid;grid-template-columns:78px 1fr;gap:12px;padding:12px 0;border-top:1px solid rgba(255,255,255,.08);font-size:.9rem}
+.tl b{font:500 .84rem/1.6 Unbounded,Manrope,sans-serif;color:var(--acc)}
+.tl span{color:var(--dim)}
+.hint{margin:0;text-align:center;color:var(--dim);font-size:.85rem;font-weight:300}
+@media(max-width:640px){.g3{display:none}.hero{border-radius:32px}.trig{border-radius:26px;padding:14px 15px 16px;font-size:.92rem}.card{border-radius:30px}}
+@media(prefers-reduced-motion:reduce){.orb,.gb,.drop{animation:none}}
+</style>
+</head>
+<body>
+<div class="bg" id="bg" aria-hidden="true">
+  <div class="orbs" id="orbs"><i class="orb o1"></i><i class="orb o2"></i><i class="orb o3"></i><i class="orb o4"></i></div>
+  <div class='mesh'><i class='m1'></i><i class='m2'></i><i class='m3'></i><i class='m4'></i></div><div class='aurora'></div>
+  <div class='lines'></div><div class='flute'></div><div class='lines hot' id='hot'></div>
+  <svg class='goo' id='goo' focusable='false'><defs>
+    <radialGradient id='gA'><stop offset='0' stop-color='#9A8AD6'/><stop offset='1' stop-color='#4A3F86'/></radialGradient>
+    <radialGradient id='gB'><stop offset='0' stop-color='#7DB0CE'/><stop offset='1' stop-color='#2E5A7E'/></radialGradient>
+    <radialGradient id='gC'><stop offset='0' stop-color='#D49AC0'/><stop offset='1' stop-color='#74405F'/></radialGradient>
+    <radialGradient id='gD'><stop offset='0' stop-color='#D8B088'/><stop offset='1' stop-color='#6E4D30'/></radialGradient>
+    <filter id='gf' filterUnits='userSpaceOnUse' x='0' y='0' width='100%' height='100%' color-interpolation-filters='sRGB'>
+      <feGaussianBlur in='SourceGraphic' stdDeviation='20'/><feColorMatrix values='1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 22 -10'/></filter>
+    <filter id='gl' filterUnits='userSpaceOnUse' x='0' y='0' width='100%' height='100%' color-interpolation-filters='sRGB'>
+      <feGaussianBlur in='SourceGraphic' stdDeviation='20' result='b'/>
+      <feColorMatrix in='b' values='1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 22 -10' result='g'/>
+      <feGaussianBlur in='g' stdDeviation='4' result='s'/>
+      <feSpecularLighting in='s' surfaceScale='7' specularConstant='1.2' specularExponent='26' lighting-color='#e9e4ff' result='sp'><feDistantLight azimuth='235' elevation='38'/></feSpecularLighting>
+      <feComposite in='sp' in2='g' operator='in' result='si'/>
+      <feMerge><feMergeNode in='g'/><feMergeNode in='si'/></feMerge></filter>
+  </defs><g id='gg' filter='url(#gf)'></g></svg>
+  <div class='beam b1'></div><div class='beam b2'></div><div class='dust'></div><div class='smoke'></div><div class='smoke s2'></div><div class='fog'></div>
+  <i class='drop' id='drop'></i><div class='vig'></div><div class='noise'></div>
+</div>
+
+<main class="wrap">
+  <header class="glass hero" data-tilt="2.5" data-dent="1">
+    <h1><span class="a">Архитектура <span class="n">ИИ-моделей:</span></span><span class="b">как устроен современный интеллект</span></h1>
+    <p class="lead">Как нейросети читают, рассуждают и видят мир. Выберите раздел, и подробная карточка выедет из-под кнопки.</p>
+  </header>
+
+  <section class="stage" aria-label="Разделы гайда">
+    <div class="row" id="row"></div>
+    <div class="drawer" id="drawer"><div class="dinner" id="dinner"></div></div>
+  </section>
+  <p class="hint">Нажмите на раздел ещё раз, и карточка уедет обратно под кнопку.</p>
+
+  <section class="more" aria-label="История нейросетей">
+    <button class="glass trig wide" id="hb" style="--acc:#B3A9D2" data-tilt="5" data-dent=".98" aria-expanded="false" aria-controls="hc">
+      <span class="num"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
+      <span class="lbl">Откуда появились нейросети<small>Краткая история: от первого искусственного нейрона до трансформеров</small></span>
+      <i class="chev"></i>
+    </button>
+    <div class="drawer" id="hd"><div class="dinner"><div class="cw" id="hc" style="--acc:#B3A9D2" role="region" aria-labelledby="hb">
+      <article class="glass card hist" data-tilt="2" data-dent=".997">
+        <div><span class="tag"><b></b>История идеи</span><h3>Идея старше компьютеров</h3>
+        <p>Нейросети появились раньше современных компьютеров: в 1940-х учёные попытались описать работу мозга математикой. Дальше было три волны: ранний энтузиазм, «зимы» из-за нехватки данных и вычислительной мощности, и взрыв глубокого обучения после 2010 года, когда появились большие наборы данных и видеокарты.</p></div>
+        <ol class="tl">
+          <li><b>1943</b><span>Маккалок и Питтс описывают математическую модель искусственного нейрона.</span></li>
+          <li><b>1958</b><span>Розенблатт создаёт перцептрон — первую обучаемую нейросеть.</span></li>
+          <li><b>1969</b><span>Минский и Пейперт показывают пределы простого перцептрона, начинается первая «зима ИИ».</span></li>
+          <li><b>1986</b><span>Румельхарт, Хинтон и Уильямс популяризируют метод обратного распространения ошибки.</span></li>
+          <li><b>1998</b><span>Ян Лекун представляет свёрточную сеть LeNet-5 для чтения рукописных цифр.</span></li>
+          <li><b>2012</b><span>AlexNet побеждает в конкурсе ImageNet на видеокартах, начинается эра глубокого обучения.</span></li>
+          <li><b>2017</b><span>Статья «Attention Is All You Need» вводит архитектуру трансформера.</span></li>
+          <li><b>2020</b><span>GPT-3 показывает, что рост масштаба даёт новые способности.</span></li>
+          <li><b>2022</b><span>ChatGPT и диффузионные модели выводят ИИ к массовой аудитории.</span></li>
+          <li><b>2024–2025</b><span>Появляются reasoning-модели и системы, понимающие текст, изображения и звук вместе.</span></li>
+        </ol>
+      </article>
+    </div></div></div>
+  </section>
+<section class='sec' aria-labelledby='labt'>
+    <h2 id='labt'>Попробуйте сами</h2>
+    <p>Две маленькие демонстрации: как модель видит текст и как выбирает следующее слово.</p>
+    <div class='two'>
+      <article class='glass pane' data-tilt='1.5' data-dent='1'>
+        <h3>Как текст режется на токены</h3><small>Упрощённая модель: настоящие токенизаторы режут текст иначе.</small>
+        <textarea id='ta' rows='3' aria-label='Текст для разбиения на токены'>Нейросети учатся предсказывать следующий токен.</textarea>
+        <div class='tok' id='tk'></div><div class='cnt' id='cn'></div>
+      </article>
+      <article class='glass pane' data-tilt='1.5' data-dent='1'>
+        <h3>Как модель выбирает следующее слово</h3><small>Нейросеть учится на <b id='out'>…</b></small>
+        <div id='bars'></div>
+        <div class='ctl'><label for='tr'>Температура <b id='tv'>1.0</b></label><input id='tr' type='range' min='0.2' max='2' step='0.1' value='1'><button class='glass btn' id='pk' type='button'>Выбрать токен</button></div>
+      </article>
+    </div>
+  </section>
+
+  <section class='sec' aria-labelledby='glt'>
+    <h2 id='glt'>Словарик</h2>
+    <p>Шесть слов, которые чаще всего встречаются в разговорах про ИИ.</p>
+    <div class='glass gl' data-tilt='1.5' data-dent='1'>
+      <div class='term'><b>Параметры</b><span>Числа внутри сети, настроенные при обучении. Их и называют весами модели.</span></div>
+      <div class='term'><b>Эмбеддинг</b><span>Вектор чисел, который кодирует смысл слова или фрагмента.</span></div>
+      <div class='term'><b>Дообучение</b><span>Доучивание готовой модели на своих данных под конкретную задачу.</span></div>
+      <div class='term'><b>RAG</b><span>Модель сначала ищет нужные документы, а потом отвечает, опираясь на них.</span></div>
+      <div class='term'><b>Галлюцинация</b><span>Уверенный, но выдуманный ответ, которого нет в данных.</span></div>
+      <div class='term'><b>Температура</b><span>Насколько случайно модель выбирает следующий токен: выше значит смелее.</span></div>
+    </div>
+  </section>
+
+  <footer>Интерактивный гайд по архитектуре ИИ-моделей.<button class='lnk' id='up' type='button'>Наверх</button></footer>
+</main>
+
+<script>
+(()=>{
+const D=[
+{n:1,t:'LLM и Трансформеры',c:'#9B8AC4',tag:'Архитектура: механизм внимания',
+ h:'Предсказание следующего токена в огромном масштабе',
+ p:'Большая языковая модель — это трансформер, обученный на триллионах токенов угадывать продолжение текста. Механизм внимания (self-attention) позволяет каждому токену «посмотреть» на все остальные и понять, какие из них важны для смысла. Затем модель дообучают на инструкциях и оценках людей, чтобы она отвечала полезно и безопасно.',
+ pts:['Эмбеддинги превращают токены в векторы смысла','Слои внимания и нейросетевые блоки повторяются десятки раз','Этапы: предобучение, дообучение на инструкциях, RLHF'],
+ m:['GPT','Claude','Gemini','Llama','Qwen','Mistral']},
+{n:2,t:'Reasoning-модели (Рассуждения)',c:'#B48AB8',tag:'Размышление перед ответом',
+ h:'Больше времени на мысль — точнее ответ',
+ p:'Reasoning-модели перед финальным ответом строят длинную цепочку рассуждений: разбивают задачу на шаги, проверяют себя и пробуют альтернативы. Их учат с помощью обучения с подкреплением на задачах с проверяемым результатом — математика, код, логика. Главный принцип — test-time compute: вычисления тратятся не только на обучение, но и на сам ответ.',
+ pts:['Скрытые токены рассуждений идут до финального текста','Награда за верный результат формирует навык самопроверки','Глубину размышления можно ограничивать бюджетом'],
+ m:['OpenAI o-серия','DeepSeek-R1','Claude с extended thinking','Gemini Thinking','Qwen QwQ']},
+{n:3,t:'Мультимодальность',c:'#8A93C9',tag:'Текст, изображение, звук, видео',
+ h:'Один трансформер для всех типов данных',
+ p:'Мультимодальные модели понимают не только текст, но и изображения, аудио и видео. Каждая модальность проходит через свой энкодер и превращается в токены в общем пространстве смыслов, а трансформер работает с ними так же, как со словами. Современные модели обучают на смешанных данных с самого начала, поэтому они связывают картинку, речь и текст в одном контексте.',
+ pts:['Изображение режется на патчи, и каждый патч становится токеном','Речь можно обрабатывать напрямую, без отдельного распознавания','Можно задать вопрос сразу по графику, фото и коду'],
+ m:['GPT-4o','Gemini','Claude','Qwen-VL','Llama Vision']},
+{n:4,t:'Контекстное окно и Токены',c:'#8FA0B3',tag:'Рабочая память модели',
+ h:'Всё, что не влезло в окно, модель не видит',
+ p:'Токен — фрагмент слова. В английском он в среднем занимает около 3–4 символов, в русском обычно короче, поэтому тот же текст стоит больше токенов. Контекстное окно — максимум токенов, которые модель держит в голове за раз: запрос, история диалога и ответ. Чем окно длиннее, тем дороже внимание и выше задержка, поэтому помогают поиск по документам (RAG), кэширование промптов и сжатие истории.',
+ pts:['Окна выросли от тысяч токенов до миллионов','Длинный контекст не гарантирует, что модель использует его равномерно','Токены определяют и стоимость запроса, и его скорость'],
+ m:['Gemini','Claude','GPT','Llama','Qwen']}
+];
+const $=s=>document.querySelector(s),row=$('#row'),dr=$('#drawer'),dn=$('#dinner');
+row.innerHTML=D.map((d,i)=>`<button class="glass trig" style="--acc:${d.c}" id="b${i}" data-tilt="8" data-dent=".975" aria-expanded="false" aria-controls="c${i}"><span class="top"><span class="num">${d.n}</span><i class="chev"></i></span><span class="lbl">${d.t}</span></button>`).join('');
+dn.innerHTML=D.map((d,i)=>`<div class="cw" id="c${i}" style="--acc:${d.c}" role="region" aria-labelledby="b${i}"><article class="glass card" data-tilt="3" data-dent=".994">
+<div><span class="tag"><b></b>${d.tag}</span><h3>${d.h}</h3><p>${d.p}</p></div>
+<div><ul>${d.pts.map(x=>`<li>${x}</li>`).join('')}</ul><div class="chips">${d.m.map(x=>`<span>${x}</span>`).join('')}</div></div>
+</article></div>`).join('');
+
+const bs=[...row.children],cs=[...dn.children];let cur=-1;
+const fit=()=>{dr.style.height=cur<0?'0px':(cs[cur].offsetHeight+20)+'px'};
+const aim=()=>{if(cur<0)return;const b=bs[cur].getBoundingClientRect(),r=dr.getBoundingClientRect();dr.style.setProperty('--ox',(b.left+b.width/2-r.left)+'px')};
+function show(i){
+  cur=i;if(i>=0)aim();
+  bs.forEach((b,k)=>{b.classList.toggle('active',k===i);b.setAttribute('aria-expanded',k===i)});
+  cs.forEach((c,k)=>c.classList.toggle('show',k===i));
+  dr.classList.toggle('has',i>=0);fit();
+  if(i>=0)setTimeout(()=>dr.scrollIntoView({behavior:'smooth',block:'nearest'}),700);
+}
+bs.forEach((b,i)=>b.addEventListener('click',()=>show(cur===i?-1:i)));
+cs.forEach((c,i)=>new ResizeObserver(()=>{if(cur===i)fit()}).observe(c));
+addEventListener('resize',()=>{aim();fit()});
+
+/* Liquid glass: springy 3D dent that wobbles like jelly */
+const fine=matchMedia('(hover:hover) and (pointer:fine)').matches&&!matchMedia('(prefers-reduced-motion:reduce)').matches;
+const P=new Map();let raf=0;
+const tf=p=>`perspective(1000px) rotateX(${p[0].toFixed(2)}deg) rotateY(${p[1].toFixed(2)}deg) scale(${p[2].toFixed(4)})`;
+const loop=()=>{let busy=0;
+  P.forEach((s,el)=>{let m=0;
+    for(let i=0;i<3;i++){s.v[i]=(s.v[i]+(s.t[i]-s.p[i])*.085)*.82;s.p[i]+=s.v[i];m+=(Math.abs(s.v[i])+Math.abs(s.t[i]-s.p[i]))*(i>1?60:1)}
+    if(m>.004){busy=1;el.style.transform=tf(s.p)}
+    else if(s.w){s.w=0;s.p=[...s.t];s.v=[0,0,0];el.style.transform=tf(s.t)}
+  });raf=busy?requestAnimationFrame(loop):0};
+const kick=()=>{if(!raf)raf=requestAnimationFrame(loop)};
+
+document.querySelectorAll('.glass').forEach(el=>{
+  const mx=+el.dataset.tilt||6,dent=+el.dataset.dent||.985,btn=el.classList.contains('trig');
+  const s={p:[0,0,1],v:[0,0,0],t:[0,0,1],w:0};P.set(el,s);
+  let rw;if(btn){rw=document.createElement('span');rw.className='rw';el.appendChild(rw)}
+  const pos=e=>{const r=el.getBoundingClientRect(),x=(e.clientX-r.left)/r.width,y=(e.clientY-r.top)/r.height;
+    el.style.setProperty('--mx',(x*100).toFixed(1)+'%');el.style.setProperty('--my',(y*100).toFixed(1)+'%');return[x,y,r]};
+  el.addEventListener('pointerenter',e=>{if(fine&&e.pointerType==='mouse')el.classList.add('on')});
+  el.addEventListener('pointermove',e=>{
+    if(!fine||e.pointerType!=='mouse')return;
+    const[x,y]=pos(e);s.t=[-(y-.5)*2*mx,(x-.5)*2*mx,dent];s.w=1;kick()});
+  el.addEventListener('pointerleave',()=>{s.t=[0,0,1];s.w=1;kick();el.classList.remove('on')});
+  el.addEventListener('pointerdown',e=>{
+    const[,,r]=pos(e);el.classList.add('on');
+    if(btn){const i=document.createElement('i');i.className='rip';i.style.left=(e.clientX-r.left)+'px';i.style.top=(e.clientY-r.top)+'px';rw.appendChild(i);setTimeout(()=>i.remove(),1100)}
+    if(fine&&e.pointerType==='mouse'){s.t[2]=dent-.025;s.w=1;kick()}});
+  ['pointerup','pointercancel'].forEach(t=>el.addEventListener(t,e=>{
+    if(e.pointerType!=='mouse')setTimeout(()=>el.classList.remove('on'),500);
+    else if(fine){s.t[2]=dent;s.w=1;kick()}}));
+});
+
+/* History drawer */
+const hb=$('#hb'),hd=$('#hd'),hc=$('#hc');let ho=false;
+const hfit=()=>{hd.style.height=ho?(hc.offsetHeight+20)+'px':'0px'};
+hb.addEventListener('click',()=>{ho=!ho;hb.classList.toggle('active',ho);hb.setAttribute('aria-expanded',ho);hc.classList.toggle('show',ho);hd.classList.toggle('has',ho);hfit();
+  if(ho)setTimeout(()=>hd.scrollIntoView({behavior:'smooth',block:'nearest'}),700)});
+new ResizeObserver(()=>{if(ho)hfit()}).observe(hc);
+
+/* Living background: orbs drift with the pointer, glass shards shift in parallax, a liquid droplet follows it */
+if(!matchMedia('(prefers-reduced-motion:reduce)').matches){
+const bg=$('#bg'),orbs=[...bg.querySelectorAll('.orb')],gbs=[...bg.querySelectorAll('.gb')],drop=$('#drop'),hot=$('#hot');
+const OA=[[300,240],[-240,200],[220,-200],[-320,260]],GA=[[-90,-70],[110,80],[-70,100]];
+const M={x:innerWidth/2,y:innerHeight/2,on:0},A={x:M.x,y:M.y,vx:0,vy:0},Dp={x:M.x,y:M.y,vx:0,vy:0,o:0};
+let br=0,tm;const bk=()=>{if(!br)br=requestAnimationFrame(bl)};
+function bl(){
+  A.vx=(A.vx+(M.x-A.x)*.018)*.9;A.vy=(A.vy+(M.y-A.y)*.018)*.9;A.x+=A.vx;A.y+=A.vy;
+  Dp.vx=(Dp.vx+(M.x-Dp.x)*.09)*.78;Dp.vy=(Dp.vy+(M.y-Dp.y)*.09)*.78;Dp.x+=Dp.vx;Dp.y+=Dp.vy;Dp.o+=(M.on-Dp.o)*.1;
+  const nx=A.x/innerWidth-.5,ny=A.y/innerHeight-.5;
+  orbs.forEach((o,i)=>o.style.translate=`${nx*OA[i][0]}px ${ny*OA[i][1]}px`);
+  gbs.forEach((g,i)=>{g.style.translate=`${nx*GA[i][0]}px ${ny*GA[i][1]}px`;g.style.rotate=`${nx*(i%2?-9:9)}deg`});
+  const st=Math.min(Math.hypot(Dp.vx,Dp.vy)*.03,.6);
+  drop.style.opacity=Dp.o.toFixed(3);
+  drop.style.transform=`translate(${(Dp.x-75).toFixed(1)}px,${(Dp.y-75).toFixed(1)}px) rotate(${Math.atan2(Dp.vy,Dp.vx).toFixed(3)}rad) scale(${(1+st).toFixed(3)},${(1/(1+st)).toFixed(3)})`;
+  hot.style.opacity=Dp.o.toFixed(3);hot.style.setProperty('--cx',Dp.x.toFixed(0)+'px');hot.style.setProperty('--cy',Dp.y.toFixed(0)+'px');
+  const d=Math.abs(M.x-A.x)+Math.abs(M.y-A.y)+Math.abs(A.vx)+Math.abs(A.vy)+Math.abs(M.x-Dp.x)+Math.abs(M.y-Dp.y)+Math.abs(Dp.vx)+Math.abs(Dp.vy)+Math.abs(M.on-Dp.o)*50;
+  br=d>.6?requestAnimationFrame(bl):0}
+const mv=e=>{if(!M.on&&Dp.o<.05){Dp.x=e.clientX;Dp.y=e.clientY;Dp.vx=Dp.vy=0}M.x=e.clientX;M.y=e.clientY;M.on=1;clearTimeout(tm);bk()};
+addEventListener('pointermove',mv,{passive:true});addEventListener('pointerdown',mv,{passive:true});
+['pointerup','pointercancel'].forEach(t=>addEventListener(t,e=>{if(e.pointerType!=='mouse')tm=setTimeout(()=>{M.on=0;bk()},700)}));
+document.documentElement.addEventListener('mouseleave',()=>{M.on=0;bk()});
+}
+})();
+</script>
+<script>
+(()=>{
+const $=s=>document.querySelector(s);
+const rm=matchMedia('(prefers-reduced-motion:reduce)').matches,fine=matchMedia('(hover:hover) and (pointer:fine)').matches;
+
+/* Liquid goo background: bubbles merge, the pointer is a bubble too */
+if(!rm){
+  const NS='http://www.w3.org/2000/svg',g=$('#gg');
+  g.setAttribute('filter',fine?'url(#gl)':'url(#gf)');
+  const S=[[.22,.28,.18,.2,.21,.17,.17],[.78,.24,.2,.22,.16,.23,.15],[.5,.7,.3,.16,.13,.2,.19],[.15,.78,.14,.14,.25,.15,.12],[.85,.72,.14,.18,.18,.26,.14],[.5,.3,.3,.12,.12,.28,.11]].slice(0,fine?6:4);
+  const B=S.map((s,i)=>{const c=document.createElementNS(NS,'circle');c.setAttribute('fill','url(#g'+'ABCD'[i%4]+')');g.appendChild(c);return{c,s}});
+  const cc=document.createElementNS(NS,'circle');cc.setAttribute('fill','url(#gA)');g.appendChild(cc);
+  let W=innerWidth,H=innerHeight;addEventListener('resize',()=>{W=innerWidth;H=innerHeight});
+  const M={x:W/2,y:H/2,on:0},C={x:W/2,y:H/2,vx:0,vy:0,r:0};let tm,fr=0,last=0,slow=0;
+  const mv=e=>{if(!M.on&&C.r<5){C.x=e.clientX;C.y=e.clientY;C.vx=C.vy=0}M.x=e.clientX;M.y=e.clientY;M.on=1;clearTimeout(tm)};
+  addEventListener('pointermove',mv,{passive:true});addEventListener('pointerdown',mv,{passive:true});
+  ['pointerup','pointercancel'].forEach(t=>addEventListener(t,e=>{if(e.pointerType!=='mouse')tm=setTimeout(()=>M.on=0,700)}));
+  document.documentElement.addEventListener('mouseleave',()=>M.on=0);
+  const tick=t=>{requestAnimationFrame(tick);
+    const dt=t-last;last=t;if(dt>30)slow++;else if(slow>0)slow-=.5;
+    if(slow>45&&g.getAttribute('filter')==='url(#gl)'){g.setAttribute('filter','url(#gf)');slow=0}
+    if(!fine&&(fr++&1))return;
+    t/=1000;const u=Math.sqrt(W*H);
+    C.vx=(C.vx+(M.x-C.x)*.08)*.78;C.vy=(C.vy+(M.y-C.y)*.08)*.78;C.x+=C.vx;C.y+=C.vy;
+    C.r+=((M.on?u*.065:0)-C.r)*.12;
+    B.forEach(({c,s},i)=>{
+      const x=W*(s[0]+s[2]*Math.sin(t*s[4]+i*1.7)),y=H*(s[1]+s[3]*Math.sin(t*s[5]+i*2.3));
+      const dx=C.x-x,dy=C.y-y,k=M.on?Math.max(0,1-Math.hypot(dx,dy)/(u*.6))*.22:0;
+      c.setAttribute('cx',(x+dx*k).toFixed(1));c.setAttribute('cy',(y+dy*k).toFixed(1));
+      c.setAttribute('r',(u*s[6]*(1+.1*Math.sin(t*.5+i))).toFixed(1))});
+    cc.setAttribute('cx',C.x.toFixed(1));cc.setAttribute('cy',C.y.toFixed(1));cc.setAttribute('r',Math.max(C.r,0).toFixed(1));
+  };
+  requestAnimationFrame(tick);
+}
+
+/* Lab 1: simplified tokenizer */
+const ta=$('#ta'),tk=$('#tk'),cn=$('#cn');
+const tokenize=s=>{const o=[],L=c=>/[a-zа-яё0-9]/i.test(c),WS=c=>c.trim()==='';let i=0;
+  while(i<s.length){let lead='';while(i<s.length&&WS(s[i]))lead+=s[i++];
+    if(i>=s.length){if(lead)o.push(lead);break}
+    if(L(s[i])){let w='';while(i<s.length&&L(s[i]))w+=s[i++];
+      const k=Math.ceil(w.length/Math.ceil(w.length/4.5));
+      for(let j=0;j<w.length;j+=k)o.push((j?'':lead)+w.slice(j,j+k))}
+    else o.push(lead+s[i++])}
+  return o};
+const rt=()=>{const t=tokenize(ta.value);tk.textContent='';
+  t.forEach((x,i)=>{const e=document.createElement('span');e.textContent=x;e.style.setProperty('--h',250+(i*23)%90);tk.appendChild(e)});
+  cn.textContent='Токенов: '+t.length+'. Символов: '+ta.value.length+'.'};
+ta.addEventListener('input',rt);rt();
+
+/* Lab 2: temperature and next-token probabilities */
+const C2=[['данных',3.2],['примерах',2.6],['ошибках',2.2],['текстах',1.6],['звёздах',-.2]];
+const bars=$('#bars'),tr=$('#tr'),tv=$('#tv'),out=$('#out');let P=[];
+bars.innerHTML=C2.map(c=>'<div class="bar"><span>'+c[0]+'</span><i><b></b></i><em>0%</em></div>').join('');
+const calc=()=>{const T=+tr.value;tv.textContent=T.toFixed(1);
+  const e=C2.map(c=>Math.exp(c[1]/T)),s=e.reduce((a,b)=>a+b);P=e.map(x=>x/s);
+  [...bars.children].forEach((r,i)=>{r.querySelector('b').style.width=(P[i]*100).toFixed(1)+'%';r.querySelector('em').textContent=Math.round(P[i]*100)+'%'})};
+tr.addEventListener('input',calc);calc();
+$('#pk').addEventListener('click',()=>{let x=Math.random(),i=0;for(;i<P.length-1;i++){x-=P[i];if(x<0)break}
+  [...bars.children].forEach((r,k)=>r.classList.toggle('pick',k===i));out.textContent=C2[i][0]});
+$('#up').addEventListener('click',()=>scrollTo({top:0,behavior:'smooth'}));
+})();
+</script>
+</body>
+</html>
